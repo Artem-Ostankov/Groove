@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Mirror.Groove
 {
-	public class GrooveTransport : MonoBehaviour, ITransport
+	public class GrooveTransport : Transport
 	{
 		public int Port = 7777;
 
@@ -24,17 +24,19 @@ namespace Mirror.Groove
 
 #endif
 
-		public bool ClientConnected()
+		private const string WebGLServerErrorMessage = "The server can not be started on a WebGL build. This is an inherent limitation of the WebGL target and will not be supported.";
+
+		public override bool ClientConnected()
 		{
 			return Client.SocketConnected;
 		}
 
-		public void ClientDisconnect()
+		public override void ClientDisconnect()
 		{
 			Client.Disconnect();
 		}
 
-		public bool ClientGetNextMessage(out TransportEvent transportEvent, out byte[] data)
+		public override bool ClientGetNextMessage(out TransportEvent transportEvent, out byte[] data)
 		{
 			WebSocketMessage msg;
 			bool GotMessage = Client.GetNextMessage(out msg);
@@ -51,13 +53,13 @@ namespace Mirror.Groove
 			return GotMessage;
 		}
 
-		public bool ClientSend(int channelId, byte[] data)
+		public override bool ClientSend(int channelId, byte[] data)
 		{
 			Client.ClientInterface.Send(data);
 			return true;
 		}
 
-		public bool GetConnectionInfo(int connectionId, out string address)
+		public override bool GetConnectionInfo(int connectionId, out string address)
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 			return Server.GetConnectionInfo(connectionId, out address);
@@ -67,7 +69,7 @@ namespace Mirror.Groove
 #endif
 		}
 
-		public bool ServerActive()
+		public override bool ServerActive()
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 			return Server.ServerActive;
@@ -76,7 +78,7 @@ namespace Mirror.Groove
 #endif
 		}
 
-		public bool ServerDisconnect(int connectionId)
+		public override bool ServerDisconnect(int connectionId)
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 			return Server.RemoveConnectionId(connectionId);
@@ -85,7 +87,7 @@ namespace Mirror.Groove
 #endif
 		}
 
-		public bool ServerGetNextMessage(out int connectionId, out TransportEvent transportEvent, out byte[] data)
+		public override bool ServerGetNextMessage(out int connectionId, out TransportEvent transportEvent, out byte[] data)
 		{
 
 			transportEvent = Mirror.TransportEvent.Disconnected;
@@ -116,12 +118,12 @@ namespace Mirror.Groove
 			return true;
 
 #else
-			Debug.LogError("DoN't StArT tHe SeRvEr On WeBgL");
+			Debug.LogError(WebGLServerErrorMessage);
 			return false;
 #endif
 		}
 
-		public bool ServerSend(int connectionId, int channelId, byte[] data)
+		public override bool ServerSend(int connectionId, int channelId, byte[] data)
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 
@@ -131,14 +133,14 @@ namespace Mirror.Groove
 #endif
 		}
 
-		public void ServerStop()
+		public override void ServerStop()
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 			Server.StopServer();
 #endif
 		}
 
-		public void Shutdown()
+		public override void Shutdown()
 		{
 			if (Client != null)
 			{
@@ -158,22 +160,17 @@ namespace Mirror.Groove
 #endif
 		}
 
-		public int GetMaxPacketSize()
+		public override int GetMaxPacketSize(int channelId = 0)
 		{
 			return int.MaxValue;
 		}
 
-		public int GetMaxPacketSize(int channelId = 0)
-		{
-			return int.MaxValue;
-		}
-
-		public void ClientConnect(string address)
+		public override void ClientConnect(string address)
 		{
 			Client.Connect(address, Port, SecureServer);
 		}
 
-		public void ServerStart()
+		public override void ServerStart()
 		{
 #if !UNITY_WEBGL || UNITY_EDITOR
 			if (SecureServer)
@@ -184,9 +181,9 @@ namespace Mirror.Groove
 			{
 				Server.StartServer(Port);
 			}
-			
+
 #else
-			Debug.LogError("DoN't StArT tHe SeRvEr On WeBgL");
+			Debug.LogError(WebGLServerErrorMessage);
 #endif
 		}
 	}
